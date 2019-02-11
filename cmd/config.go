@@ -36,10 +36,10 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 1 {
-			Api.SetPreference(args[0], args[1])
+			api.SetPreference(args[0], args[1])
 			fmt.Println("Successfully set " + args[0] + " to " + args[1])
 		} else {
-			result := gjson.Parse(Api.GetPreferences())
+			result := gjson.Parse(api.GetPreferences())
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 			result.ForEach(func(key, value gjson.Result) bool {

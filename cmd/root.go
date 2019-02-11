@@ -28,7 +28,7 @@ import (
 
 var (
 	cfgFile string
-	Api     *qbittorrent.Api
+	api     *qbittorrent.Api
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -67,7 +67,6 @@ func init() {
 		log.Init(cmd.Flag("log-level").Value.String())
 
 		// Set up the config file location from flag and set type
-		// viper.SetConfigType("yaml")
 		viper.SetConfigFile(cfgFile)
 
 		viper.SetDefault("host", "")
@@ -88,7 +87,7 @@ func init() {
 
 		viper.AutomaticEnv() // read in environment variables that match
 
-		Api = qbittorrent.GetApi(viper.GetString("host"), viper.GetString("username"), viper.GetString("password"))
+		api = qbittorrent.GetApi(viper.GetString("host"), viper.GetString("username"), viper.GetString("password"))
 
 		return nil
 	}

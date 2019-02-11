@@ -61,7 +61,7 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		results := gjson.Parse(Api.GetTorrents(filters))
+		results := gjson.Parse(api.GetTorrents(filters))
 
 		var filtered []qbittorrent.Torrent
 		results.ForEach(func(key, t gjson.Result) bool {
@@ -84,7 +84,7 @@ to quickly create a Cobra application.`,
 		// fmt.Fprintln(w, "Done\tDown\tUp\tETA\tRatio\tState\tName")
 		for _, torrent := range filtered {
 			if cmd.Flag("savepath").Value.String() != "" {
-				if _, err := Api.SetSavePath(torrent.Hash, cmd.Flag("savepath").Value.String()); err != nil {
+				if _, err := api.SetSavePath(torrent.Hash, cmd.Flag("savepath").Value.String()); err != nil {
 					log.Error.Fatalln(err)
 				}
 
@@ -92,22 +92,22 @@ to quickly create a Cobra application.`,
 			}
 
 			if pause == true {
-				if _, err := Api.Pause(torrent.Hash); err != nil {
+				if _, err := api.Pause(torrent.Hash); err != nil {
 					log.Error.Fatalln(err)
 				}
 				fmt.Fprintln(w, fmt.Sprintf("PAUSING\t%s", torrent.Name))
 			} else if resume == true {
-				if _, err := Api.Resume(torrent.Hash); err != nil {
+				if _, err := api.Resume(torrent.Hash); err != nil {
 					log.Error.Fatalln(err)
 				}
 				fmt.Fprintln(w, fmt.Sprintf("RESUMING\t%s", torrent.Name))
 			} else if delete == true {
-				if _, err := Api.Delete(torrent.Hash); err != nil {
+				if _, err := api.Delete(torrent.Hash); err != nil {
 					log.Error.Fatalln(err)
 				}
 				fmt.Fprintln(w, fmt.Sprintf("DELETED\t%s", torrent.Name))
 			} else if purge == true {
-				if _, err := Api.DeletePermanently(torrent.Hash); err != nil {
+				if _, err := api.DeletePermanently(torrent.Hash); err != nil {
 					log.Error.Fatalln(err)
 				}
 				fmt.Fprintln(w, fmt.Sprintf("PURGED\t%s", torrent.Name))
