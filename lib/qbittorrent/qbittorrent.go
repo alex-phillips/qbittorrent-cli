@@ -2,11 +2,13 @@ package qbittorrent
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+
+	"github.com/alex-phillips/qbittorrent/lib/log"
 )
 
 type Api struct {
@@ -26,10 +28,48 @@ func GetApi(host string, username string, password string) *Api {
 	return &api
 }
 
+func (api *Api) Delete(hash string) (*string, error) {
+	resp, err := api.Client.PostForm(api.Host+"/command/delete", url.Values{
+		"hashes": {hash},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	retval := string(body)
+	if retval != "" {
+		return nil, errors.New(retval)
+	}
+
+	return &retval, nil
+}
+
+func (api *Api) DeletePermanently(hash string) (*string, error) {
+	resp, err := api.Client.PostForm(api.Host+"/command/deletePerm", url.Values{
+		"hashes": {hash},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	retval := string(body)
+	if retval != "" {
+		return nil, errors.New(retval)
+	}
+
+	return &retval, nil
+}
+
 func (api *Api) GetPreferences() string {
 	resp, err := api.Client.Get(api.Host + "/query/preferences")
 	if err != nil {
-		log.Fatalln(err)
+		log.Error.Fatalln(err)
 	}
 
 	defer resp.Body.Close()
@@ -38,10 +78,10 @@ func (api *Api) GetPreferences() string {
 	return string(body)
 }
 
-func (api *Api) GetTorrents(filters map[string]string) []Torrent {
+func (api *Api) GetTorrents(filters map[string]string) string {
 	req, err := http.NewRequest("GET", api.Host+"/query/torrents", nil)
 	if err != nil {
-		log.Fatalln(err)
+		log.Error.Fatalln(err)
 	}
 
 	q := req.URL.Query()
@@ -51,22 +91,24 @@ func (api *Api) GetTorrents(filters map[string]string) []Torrent {
 
 	req.URL.RawQuery = q.Encode()
 
-	var torrents []Torrent
+	// var torrents []Torrent
 
 	resp, err := api.Client.Do(req)
 	if err != nil {
-		return torrents
+		return "[]"
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 
-	err = json.Unmarshal(body, &torrents)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	return string(body)
 
-	return torrents
+	// err = json.Unmarshal(body, &torrents)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// return torrents
 }
 
 func (api *Api) Login(username string, password string) (*string, error) {
@@ -82,9 +124,48 @@ func (api *Api) Login(username string, password string) (*string, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	retval := string(body)
+	if retval != "" {
+		return nil, errors.New(retval)
+	}
 
 	return &retval, nil
 }
+
+func (api *Api) Pause(hash string) (*string, error) {
+	resp, err := api.Client.PostForm(api.Host+"/command/pause", url.Values{
+		"hash": {hash},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	retval := string(body)
+	if retval != "" {
+		return nil, errors.New(retval)
+	}
+
+	return &retval, nil
+}
+
+// func (api *Api) SetCategory(hash string, category string) (*string, error) {
+// 	resp, err := api.Client.PostForm(api.Host+"/command/setCategory", url.Values{
+// 		"hash":     {hash},
+// 		"category": {category},
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	defer resp.Body.Close()
+// 	body, err := ioutil.ReadAll(resp.Body)
+
+// 	retval := string(body)
+
+// 	return &retval, nil
+// }
 
 func (api *Api) SetPreference(key string, value string) (*string, error) {
 	preferences := map[string]string{
@@ -102,6 +183,48 @@ func (api *Api) SetPreference(key string, value string) (*string, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	retval := string(body)
+	if retval != "" {
+		return nil, errors.New(retval)
+	}
+
+	return &retval, nil
+}
+
+func (api *Api) SetSavePath(hash string, savepath string) (*string, error) {
+	resp, err := api.Client.PostForm(api.Host+"/command/setLocation", url.Values{
+		"hashes":   {hash},
+		"location": {savepath},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	retval := string(body)
+	if retval != "" {
+		return nil, errors.New(retval)
+	}
+
+	return &retval, nil
+}
+
+func (api *Api) Resume(hash string) (*string, error) {
+	resp, err := api.Client.PostForm(api.Host+"/command/resume", url.Values{
+		"hash": {hash},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	retval := string(body)
+	if retval != "" {
+		return nil, errors.New(retval)
+	}
 
 	return &retval, nil
 }

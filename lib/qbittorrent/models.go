@@ -1,6 +1,7 @@
 package qbittorrent
 
 type Torrent struct {
+	Hash              string  `json:"hash"`
 	AddedOn           int     `json:"added_on"`
 	AmountLeft        int     `json:"amount_left"`
 	AutoTmm           bool    `json:"auto_tmm"`

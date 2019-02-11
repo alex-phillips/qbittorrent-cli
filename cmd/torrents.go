@@ -15,12 +15,25 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"text/tabwriter"
 
+	"github.com/alex-phillips/qbittorrent/lib/log"
+	"github.com/alex-phillips/qbittorrent/lib/qbittorrent"
 	"github.com/alex-phillips/qbittorrent/lib/utils"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/gjson"
+)
+
+var (
+	pause  bool
+	resume bool
+	delete bool
+	purge  bool
 )
 
 // downloadSubCmd represents the freeleech command
@@ -38,21 +51,77 @@ to quickly create a Cobra application.`,
 			"filter":   cmd.Flag("filter").Value.String(),
 			"category": cmd.Flag("category").Value.String(),
 		}
-		torrents := Api.GetTorrents(filters)
+
+		// Build search filters based on flag
+		searchFilters := make(map[string]string)
+		for _, search := range strings.Split(cmd.Flag("search").Value.String(), ",") {
+			if search != "" {
+				searchPair := strings.Split(search, "=")
+				searchFilters[searchPair[0]] = searchPair[1]
+			}
+		}
+
+		results := gjson.Parse(Api.GetTorrents(filters))
+
+		var filtered []qbittorrent.Torrent
+		results.ForEach(func(key, t gjson.Result) bool {
+			if len(searchFilters) > 0 {
+				for field, regex := range searchFilters {
+					if match, _ := regexp.MatchString("(?i)"+regex, gjson.Get(t.String(), field).String()); match == false {
+						return true
+					}
+				}
+			}
+
+			var torrent qbittorrent.Torrent
+			json.Unmarshal([]byte(t.String()), &torrent)
+			filtered = append(filtered, torrent)
+
+			return true
+		})
 
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "Done\tDown\tUp\tETA\tRatio\tState\tName")
-		for _, torrent := range torrents {
-			row := fmt.Sprintf("%.0f%%\t%s\t%s\t%s\t%.2f\t%s\t%s",
-				torrent.Progress*100,
-				utils.ByteCountBinary(torrent.DLSpeed),
-				utils.ByteCountBinary(torrent.ULSpeed),
-				utils.SecondsToHuman(torrent.ETA),
-				torrent.Ratio,
-				torrent.State,
-				torrent.Name,
-			)
-			fmt.Fprintln(w, row)
+		// fmt.Fprintln(w, "Done\tDown\tUp\tETA\tRatio\tState\tName")
+		for _, torrent := range filtered {
+			if cmd.Flag("savepath").Value.String() != "" {
+				if _, err := Api.SetSavePath(torrent.Hash, cmd.Flag("savepath").Value.String()); err != nil {
+					log.Error.Fatalln(err)
+				}
+
+				fmt.Fprintln(w, fmt.Sprintf("MOVED\t%s", torrent.Name))
+			}
+
+			if pause == true {
+				if _, err := Api.Pause(torrent.Hash); err != nil {
+					log.Error.Fatalln(err)
+				}
+				fmt.Fprintln(w, fmt.Sprintf("PAUSING\t%s", torrent.Name))
+			} else if resume == true {
+				if _, err := Api.Resume(torrent.Hash); err != nil {
+					log.Error.Fatalln(err)
+				}
+				fmt.Fprintln(w, fmt.Sprintf("RESUMING\t%s", torrent.Name))
+			} else if delete == true {
+				if _, err := Api.Delete(torrent.Hash); err != nil {
+					log.Error.Fatalln(err)
+				}
+				fmt.Fprintln(w, fmt.Sprintf("DELETED\t%s", torrent.Name))
+			} else if purge == true {
+				if _, err := Api.DeletePermanently(torrent.Hash); err != nil {
+					log.Error.Fatalln(err)
+				}
+				fmt.Fprintln(w, fmt.Sprintf("PURGED\t%s", torrent.Name))
+			} else {
+				fmt.Fprintln(w, fmt.Sprintf("%.0f%%\t%s\t%s\t%s\t%.2f\t%s\t%s",
+					torrent.Progress*100,
+					utils.ByteCountBinary(torrent.DLSpeed),
+					utils.ByteCountBinary(torrent.ULSpeed),
+					utils.SecondsToHuman(torrent.ETA),
+					torrent.Ratio,
+					torrent.State,
+					torrent.Name,
+				))
+			}
 		}
 
 		w.Flush()
@@ -62,5 +131,13 @@ to quickly create a Cobra application.`,
 func init() {
 	torrentsCmd.Flags().StringP("filter", "f", "", "Filter torrents by status")
 	torrentsCmd.Flags().StringP("category", "c", "", "Filter torrents by category")
+	torrentsCmd.Flags().StringP("search", "S", "", "Filter torrents by category")
+	torrentsCmd.Flags().StringP("savepath", "s", "", "Set save path of filtered torrents")
+
+	torrentsCmd.Flags().BoolVar(&pause, "pause", false, "Pause all filtered torrents")
+	torrentsCmd.Flags().BoolVar(&resume, "resume", false, "Resume all filtered torrents")
+	torrentsCmd.Flags().BoolVar(&delete, "delete", false, "Delete all filtered torrents")
+	torrentsCmd.Flags().BoolVar(&purge, "purge", false, "Delete and remove data of all filtered torrents")
+
 	rootCmd.AddCommand(torrentsCmd)
 }

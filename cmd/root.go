@@ -58,7 +58,7 @@ func init() {
 	home, _ := homedir.Dir()
 
 	// Set global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", home+"/.qbittorrent", "config file")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", home+"/.qbittorrent.toml", "config file")
 	rootCmd.PersistentFlags().StringP("log-level", "l", "info", "Set log level")
 	rootCmd.PersistentFlags().BoolVar(&utils.DryRun, "dry-run", false, "Don't download any files")
 
@@ -67,15 +67,21 @@ func init() {
 		log.Init(cmd.Flag("log-level").Value.String())
 
 		// Set up the config file location from flag and set type
-		viper.SetConfigType("yaml")
+		// viper.SetConfigType("yaml")
 		viper.SetConfigFile(cfgFile)
+
+		viper.SetDefault("host", "")
+		viper.SetDefault("port", "")
+		viper.SetDefault("username", "")
+		viper.SetDefault("password", "")
 
 		// If the config file doesn't exist,
 		if _, err := os.Stat(cfgFile); os.IsNotExist(err) {
-			if err := viper.SafeWriteConfigAs(cfgFile); err != nil {
+			if err := viper.WriteConfigAs(cfgFile); err != nil {
 				log.Error.Fatalln(err)
 			}
-			log.Warn.Println("Creating config file at " + cfgFile + ". You can override these variables with environment variables.")
+			viper.SafeWriteConfigAs(cfgFile)
+			log.Warn.Fatalln("Creating config file at " + cfgFile + ". You can override these variables with environment variables.")
 		} else if err := viper.ReadInConfig(); err != nil {
 			log.Error.Fatalln(err)
 		}
