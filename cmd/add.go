@@ -57,6 +57,11 @@ to quickly create a Cobra application.`,
 			api.UploadLink(link, params)
 			log.Info.Println("Added link...")
 		}
+
+		for _, file := range files {
+			api.UploadFile(file, params)
+			log.Info.Println("Added file...")
+		}
 	},
 }
 

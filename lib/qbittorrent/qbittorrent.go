@@ -1,12 +1,18 @@
 package qbittorrent
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
+	"path/filepath"
 
 	"github.com/alex-phillips/qbittorrent/lib/log"
 )
@@ -229,45 +235,45 @@ func (api *Api) Resume(hash string) (*string, error) {
 	return &retval, nil
 }
 
-// func (api *Api) UploadFile(path string, params map[string]string) (*string, error) {
-// 	file, _ := os.Open(path)
-// 	defer file.Close()
+func (api *Api) UploadFile(path string, params map[string]string) (*string, error) {
+	file, _ := os.Open(path)
+	defer file.Close()
 
-// 	formBody := &bytes.Buffer{}
-// 	writer := multipart.NewWriter(formBody)
+	formBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(formBody)
 
-// 	for k, v := range params {
-// 		_ = writer.WriteField(k, v)
-// 	}
+	for k, v := range params {
+		_ = writer.WriteField(k, v)
+	}
 
-// 	part, _ := writer.CreateFormFile("torrents", filepath.Base(file.Name()))
-// 	io.Copy(part, file)
+	part, _ := writer.CreateFormFile("torrents", filepath.Base(file.Name()))
+	io.Copy(part, file)
 
-// 	writer.Close()
+	writer.Close()
 
-// 	req, err := http.NewRequest("POST", api.Host+"/command/upload", formBody)
-// 	req.Header.Add("Content-Type", writer.FormDataContentType())
-// 	if err != nil {
-// 		log.Error.Fatalln(err)
-// 	}
+	req, err := http.NewRequest("POST", api.Host+"/command/upload", formBody)
+	req.Header.Add("Content-Type", writer.FormDataContentType())
+	if err != nil {
+		log.Error.Fatalln(err)
+	}
 
-// 	resp, err := api.Client.Do(req)
-// 	if err != nil {
-// 		log.Error.Fatalln(err)
-// 	}
+	resp, err := api.Client.Do(req)
+	if err != nil {
+		log.Error.Fatalln(err)
+	}
 
-// 	defer resp.Body.Close()
-// 	body, err := ioutil.ReadAll(resp.Body)
-// 	if err != nil {
-// 		log.Error.Fatalln(err)
-// 	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Error.Fatalln(err)
+	}
 
-// 	fmt.Println(string(body))
+	fmt.Println(string(body))
 
-// 	retval := string(body)
+	retval := string(body)
 
-// 	return &retval, nil
-// }
+	return &retval, nil
+}
 
 func (api *Api) UploadLink(link string, params map[string]string) (*string, error) {
 	urlVals := url.Values{
