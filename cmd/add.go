@@ -43,6 +43,7 @@ to quickly create a Cobra application.`,
 			params["savepath"] = savepath
 		}
 
+		// Iterate over the args to separate possible files and URLs in the same command
 		for _, item := range args {
 			if match, _ := regexp.MatchString("^magnet:", item); match == true {
 				links = append(links, item)
@@ -51,6 +52,7 @@ to quickly create a Cobra application.`,
 			}
 		}
 
+		// Upload magnet links
 		for _, link := range links {
 			api.UploadLink(link, params)
 			log.Info.Println("Added link...")
