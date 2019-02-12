@@ -228,3 +228,68 @@ func (api *Api) Resume(hash string) (*string, error) {
 
 	return &retval, nil
 }
+
+// func (api *Api) UploadFile(path string, params map[string]string) (*string, error) {
+// 	file, _ := os.Open(path)
+// 	defer file.Close()
+
+// 	formBody := &bytes.Buffer{}
+// 	writer := multipart.NewWriter(formBody)
+
+// 	for k, v := range params {
+// 		_ = writer.WriteField(k, v)
+// 	}
+
+// 	part, _ := writer.CreateFormFile("torrents", filepath.Base(file.Name()))
+// 	io.Copy(part, file)
+
+// 	writer.Close()
+
+// 	req, err := http.NewRequest("POST", api.Host+"/command/upload", formBody)
+// 	req.Header.Add("Content-Type", writer.FormDataContentType())
+// 	if err != nil {
+// 		log.Error.Fatalln(err)
+// 	}
+
+// 	resp, err := api.Client.Do(req)
+// 	if err != nil {
+// 		log.Error.Fatalln(err)
+// 	}
+
+// 	defer resp.Body.Close()
+// 	body, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		log.Error.Fatalln(err)
+// 	}
+
+// 	fmt.Println(string(body))
+
+// 	retval := string(body)
+
+// 	return &retval, nil
+// }
+
+func (api *Api) UploadLink(link string, params map[string]string) (*string, error) {
+	urlVals := url.Values{
+		"urls": {link},
+	}
+
+	for k, v := range params {
+		urlVals.Add(k, v)
+	}
+
+	resp, err := api.Client.PostForm(api.Host+"/command/download", urlVals)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	retval := string(body)
+	if retval != "" {
+		return nil, errors.New(retval)
+	}
+
+	return &retval, nil
+}
