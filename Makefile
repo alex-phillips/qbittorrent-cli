@@ -1,5 +1,5 @@
 #VERSION=$(shell git describe --tags)
-LDFLAGS=-ldflags "-X main.Version=${VERSION} -s" # -w"
+LDFLAGS=-ldflags "-X main.Version=${VERSION} -s" # -w" (https://golang.org/cmd/link/)
 #.PHONY: build
 build:
 	GO111MODULE=on GOOS=windows go build $(LDFLAGS) -o dist/qbtcli.exe *.go
